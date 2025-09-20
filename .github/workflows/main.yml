@@ -104,7 +104,7 @@ jobs:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USER }}
           key: ${{ secrets.SSH_KEY }}
-          passphrase: ${{ secrets.SSH_PASSPРАSE }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
             cd ~/kittygram_final || git clone https://github.com/Chashkapluy1/kittygram_final.git ~/kittygram_final && cd ~/kittygram_final
             git pull
