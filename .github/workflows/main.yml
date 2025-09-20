@@ -34,7 +34,7 @@ jobs:
         POSTGRES_DB: kittygram_test_db
         POSTGRES_USER: kittygram_user
         POSTGRES_PASSWORD: kittygram_password
-        DB_HOST: 127.0.0.1 # <<< ФИНАЛЬНОЕ ИСПРАВЛЕНИЕ
+        DB_HOST: 127.0.0.1
         DB_PORT: 5432
         SECRET_KEY: 'a-dummy-secret-key-for-ci'
         DEBUG: True
@@ -109,12 +109,14 @@ jobs:
             cd ~/kittygram_final || git clone https://github.com/Chashkapluy1/kittygram_final.git ~/kittygram_final && cd ~/kittygram_final
             git pull
             echo "${{ secrets.DOT_ENV }}" > .env
-            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
-            docker compose pull
-            docker compose up -d
-            docker compose exec backend python manage.py migrate
-            docker compose exec backend python manage.py collectstatic --no-input
-            docker image prune -f
+            
+            # <<< ИСПРАВЛЕНО: Добавлен sudo для решения проблемы "permission denied"
+            sudo docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+            sudo docker compose pull
+            sudo docker compose up -d
+            sudo docker compose exec backend python manage.py migrate
+            sudo docker compose exec backend python manage.py collectstatic --no-input
+            sudo docker image prune -f
 
   send_message:
     runs-on: ubuntu-latest
