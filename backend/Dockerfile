@@ -15,12 +15,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Копируем весь код проекта
 COPY . .
 
-# --- ЭТОТ БЛОК МЫ БУДЕМ МЕНЯТЬ ---
-
-# --- ВАРИАНТ 1: ДЛЯ ОТЛАДКИ (используй его сейчас) ---
-# Временно заменяем gunicorn на runserver для получения детальных логов
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
-
-# --- ВАРИАНТ 2: ДЛЯ ПРОДАКШЕНА (вернешь его в самом конце) ---
-# Правильная команда для запуска gunicorn
-# CMD ["gunicorn", "kittygram_backend.wsgi:application", "--bind", "0.0.0.0:8000"]
+CMD ["gunicorn", "kittygram_backend.wsgi:application", "--bind", "0.0.0.0:8000"]
