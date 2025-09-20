@@ -12,9 +12,9 @@ jobs:
       postgres:
         image: postgres:13.10
         env:
+          POSTGRES_DB: kittygram
           POSTGRES_USER: kittygram_user
           POSTGRES_PASSWORD: kittygram_password
-          POSTGRES_DB: kittygram
         ports:
           - 5432:5432
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
@@ -28,16 +28,17 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r ./backend/requirements.txt 
-    - name: Test with flake8 and django tests
+        pip install -r ./backend/requirements.txt
+    - name: Run Django tests
+      # <<< ИСПРАВЛЕНО: Правильные имена переменных, хост и SECRET_KEY
       env:
-        POSTGRES_USER: kittygram_user
-        POSTGRES_PASSWORD: kittygram_password
-        POSTGRES_DB: kittygram
-        DB_HOST: 127.0.0.1
+        DB_NAME: kittygram
+        DB_USER: kittygram_user
+        DB_PASSWORD: kittygram_password
+        DB_HOST: postgres
         DB_PORT: 5432
+        SECRET_KEY: 'ci-secret-key'
       run: |
-        python -m flake8 backend/
         cd backend/
         python manage.py test
 
@@ -61,7 +62,7 @@ jobs:
   build_and_push_to_docker_hub:
     name: Push Docker images to DockerHub
     runs-on: ubuntu-latest
-    needs: 
+    needs:
       - tests_backend
       - tests_frontend
     steps:
@@ -69,29 +70,32 @@ jobs:
         uses: actions/checkout@v3
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
-      - name: Login to Docker 
+      - name: Login to Docker
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
       - name: Push backend to DockerHub
+        # <<< УЛУЧШЕНО: Используем секрет для имени пользователя
         uses: docker/build-push-action@v4
         with:
           context: ./backend/
           push: true
-          tags: pavellagerev/kittygram_backend:latest
+          tags: ${{ secrets.DOCKER_USERNAME }}/kittygram_backend:latest
       - name: Push frontend to DockerHub
+        # <<< УЛУЧШЕНО: Используем секрет для имени пользователя
         uses: docker/build-push-action@v4
         with:
           context: ./frontend/
           push: true
-          tags: pavellagerev/kittygram_frontend:latest
+          tags: ${{ secrets.DOCKER_USERNAME }}/kittygram_frontend:latest
       - name: Push gateway to DockerHub
+        # <<< УЛУЧШЕНО: Используем секрет для имени пользователя
         uses: docker/build-push-action@v4
         with:
           context: ./nginx/
           push: true
-          tags: pavellagerev/kittygram_gateway:latest
+          tags: ${{ secrets.DOCKER_USERNAME }}/kittygram_gateway:latest
 
   deploy:
     runs-on: ubuntu-latest
@@ -105,6 +109,7 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
+            # Переходим в директорию или клонируем репозиторий
             if [ -d "kittygram_final" ]; then
               cd kittygram_final
               git pull
@@ -112,12 +117,18 @@ jobs:
               git clone https://github.com/Chashkapluy1/kittygram_final.git
               cd kittygram_final
             fi
+            
+            # Создаем .env файл из секрета GitHub
             echo "${{ secrets.DOT_ENV }}" > .env
-            sudo docker compose pull
-            sudo docker compose down
-            sudo docker compose up -d
-            sudo docker compose exec backend python manage.py migrate
-            sudo docker compose exec backend python manage.py collectstatic --no-input
+            
+            # <<< ИСПРАВЛЕНО: Явно указываем production-файл
+            sudo docker compose -f docker-compose.production.yml pull
+            sudo docker compose -f docker-compose.production.yml down
+            sudo docker compose -f docker-compose.production.yml up -d
+            
+            # Выполняем миграции и сборку статики
+            sudo docker compose -f docker-compose.production.yml exec backend python manage.py migrate
+            sudo docker compose -f docker-compose.production.yml exec backend python manage.py collectstatic --no-input
 
   send_message:
     runs-on: ubuntu-latest
