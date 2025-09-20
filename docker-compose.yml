@@ -1,27 +1,35 @@
-version: '3'
+    services:
+      db:
+        image: postgres:13.0-alpine
+        volumes:
+          - pg_data:/var/lib/postgresql/data/
+        env_file:
+          - ./.env
+      backend:
+        build: ./backend/
+        volumes:
+          - static_volume:/app/static/
+          - media_volume:/app/media/
+        depends_on:
+          - db
+        env_file:
+          - ./.env
+      frontend:
+        build: ./frontend/
+        volumes:
+          - static_volume:/app/build
+      gateway:
+        build: ./nginx/
+        ports:
+          - "9000:80"
+        volumes:
+          - static_volume:/static_volume/
+          - media_volume:/media_volume/
+        depends_on:
+          - backend
+          - frontend
 
-volumes:
-  pg_data:
-  static:
-
-services:
-  db:
-    image: postgres:13
     volumes:
-      - pg_data:/var/lib/postgresql/data
-  backend:
-    build: ./backend/
-    env_file: .env
-  frontend:
-    env_file: .env
-    build: ./frontend/
-    command: cp -r /app/build/. /static/
-    volumes:
-      - static:/static
-  gateway:
-    build: ./nginx/
-    env_file: .env
-    ports:
-      - 9000:80
-    volumes:
-      - static:/static
+      pg_data:
+      static_volume:
+      media_volume:
