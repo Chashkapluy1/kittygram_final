@@ -1,35 +1,62 @@
-    services:
-      db:
-        image: postgres:13.0-alpine
-        volumes:
-          - pg_data:/var/lib/postgresql/data/
-        env_file:
-          - ./.env
-      backend:
-        image: pavellagerev/kittygram_backend:latest
-        volumes:
-          - static_volume:/app/static/
-          - media_volume:/app/media/
-        depends_on:
-          - db
-        env_file:
-          - ./.env
-      frontend:
-        image: pavellagerev/kittygram_frontend:latest
-        volumes:
-          - static_volume:/app/build
-      gateway:
-        image: pavellagerev/kittygram_gateway:latest
-        ports:
-          - "9000:80"
-        volumes:
-          - static_volume:/static_volume/
-          - media_volume:/media_volume/
-        depends_on:
-          - backend
-          - frontend
+version: '3.8'
 
+services:
+  db:
+    image: postgres:13.0-alpine
+    restart: always
     volumes:
-      pg_data:
-      static_volume:
-      media_volume:
+      - pg_data:/var/lib/postgresql/data/
+    env_file: ./.env
+    networks:
+      - kittygram_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    image: pavellagerev/kittygram_backend:latest
+    restart: always
+    volumes:
+      - static_volume:/app/static/
+      - media_volume:/app/media/
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: ./.env
+    networks:
+      - kittygram_network
+
+  frontend:
+    image: pavellagerev/kittygram_frontend:latest
+    restart: always
+    volumes:
+      - static_volume:/app/build/static
+    depends_on:
+      - backend
+    networks:
+      - kittygram_network
+
+  gateway:
+    image: pavellagerev/kittygram_gateway:latest
+    restart: always
+    ports:
+      - "9000:80"
+    volumes:
+      - static_volume:/var/html/static/
+      - media_volume:/var/html/media/
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - kittygram_network
+
+volumes:
+  pg_data:
+  static_volume:
+  media_volume:
+
+networks:
+  kittygram_network:
+    driver: bridge
