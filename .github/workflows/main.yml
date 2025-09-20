@@ -31,11 +31,10 @@ jobs:
         pip install -r ./backend/requirements.txt
     - name: Run Django tests
       env:
-        # <<< ИСПРАВЛЕНО: Имена переменных теперь совпадают с settings.py
         POSTGRES_DB: kittygram_test_db
         POSTGRES_USER: kittygram_user
         POSTGRES_PASSWORD: kittygram_password
-        DB_HOST: postgres # В settings.py это DB_HOST, так что оставляем
+        DB_HOST: 127.0.0.1 # <<< ФИНАЛЬНОЕ ИСПРАВЛЕНИЕ
         DB_PORT: 5432
         SECRET_KEY: 'a-dummy-secret-key-for-ci'
         DEBUG: True
@@ -105,30 +104,16 @@ jobs:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USER }}
           key: ${{ secrets.SSH_KEY }}
-          passphrase: ${{ secrets.SSH_PASSPHRASE }}
+          passphrase: ${{ secrets.SSH_PASSPРАSE }}
           script: |
-            # Переходим в директорию проекта, если нет - клонируем
             cd ~/kittygram_final || git clone https://github.com/Chashkapluy1/kittygram_final.git ~/kittygram_final && cd ~/kittygram_final
             git pull
-
-            # Создаем .env файл из секрета GitHub
             echo "${{ secrets.DOT_ENV }}" > .env
-
-            # Логинимся в Docker Hub на сервере
             docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
-
-            # <<< ИСПРАВЛЕНО: Используем стандартный docker-compose.yml и убираем sudo
-            # Скачиваем свежие образы с Docker Hub
             docker compose pull
-
-            # Перезапускаем все сервисы в фоновом режиме
             docker compose up -d
-
-            # Выполняем миграции и сборку статики
             docker compose exec backend python manage.py migrate
             docker compose exec backend python manage.py collectstatic --no-input
-
-            # Очищаем неиспользуемые образы Docker для экономии места
             docker image prune -f
 
   send_message:
