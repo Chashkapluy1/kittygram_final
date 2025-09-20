@@ -38,7 +38,7 @@ jobs:
         DB_PORT: 5432
       run: |
         cd backend/
-        python manage.py test
+        python manage.py test -v 2
 
   tests_frontend:
     runs-on: ubuntu-latest
