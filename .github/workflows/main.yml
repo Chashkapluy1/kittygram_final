@@ -12,7 +12,7 @@ jobs:
       postgres:
         image: postgres:13.10
         env:
-          POSTGRES_DB: kittygram
+          POSTGRES_DB: kittygram_test_db
           POSTGRES_USER: kittygram_user
           POSTGRES_PASSWORD: kittygram_password
         ports:
@@ -30,14 +30,15 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r ./backend/requirements.txt
     - name: Run Django tests
-      # <<< ИСПРАВЛЕНО: Правильные имена переменных, хост и SECRET_KEY
       env:
-        DB_NAME: kittygram
-        DB_USER: kittygram_user
-        DB_PASSWORD: kittygram_password
-        DB_HOST: postgres
+        # <<< ИСПРАВЛЕНО: Имена переменных теперь совпадают с settings.py
+        POSTGRES_DB: kittygram_test_db
+        POSTGRES_USER: kittygram_user
+        POSTGRES_PASSWORD: kittygram_password
+        DB_HOST: postgres # В settings.py это DB_HOST, так что оставляем
         DB_PORT: 5432
-        SECRET_KEY: 'ci-secret-key'
+        SECRET_KEY: 'a-dummy-secret-key-for-ci'
+        DEBUG: True
       run: |
         cd backend/
         python manage.py test
@@ -76,21 +77,18 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
       - name: Push backend to DockerHub
-        # <<< УЛУЧШЕНО: Используем секрет для имени пользователя
         uses: docker/build-push-action@v4
         with:
           context: ./backend/
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/kittygram_backend:latest
       - name: Push frontend to DockerHub
-        # <<< УЛУЧШЕНО: Используем секрет для имени пользователя
         uses: docker/build-push-action@v4
         with:
           context: ./frontend/
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/kittygram_frontend:latest
       - name: Push gateway to DockerHub
-        # <<< УЛУЧШЕНО: Используем секрет для имени пользователя
         uses: docker/build-push-action@v4
         with:
           context: ./nginx/
@@ -101,7 +99,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build_and_push_to_docker_hub
     steps:
-      - name: Executing remote ssh commands to deploy
+      - name: Deploy to server
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.HOST }}
@@ -109,26 +107,29 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
-            # Переходим в директорию или клонируем репозиторий
-            if [ -d "kittygram_final" ]; then
-              cd kittygram_final
-              git pull
-            else
-              git clone https://github.com/Chashkapluy1/kittygram_final.git
-              cd kittygram_final
-            fi
-            
+            # Переходим в директорию проекта, если нет - клонируем
+            cd ~/kittygram_final || git clone https://github.com/Chashkapluy1/kittygram_final.git ~/kittygram_final && cd ~/kittygram_final
+            git pull
+
             # Создаем .env файл из секрета GitHub
             echo "${{ secrets.DOT_ENV }}" > .env
-            
-            # <<< ИСПРАВЛЕНО: Явно указываем production-файл
-            sudo docker compose -f docker-compose.production.yml pull
-            sudo docker compose -f docker-compose.production.yml down
-            sudo docker compose -f docker-compose.production.yml up -d
-            
+
+            # Логинимся в Docker Hub на сервере
+            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+
+            # <<< ИСПРАВЛЕНО: Используем стандартный docker-compose.yml и убираем sudo
+            # Скачиваем свежие образы с Docker Hub
+            docker compose pull
+
+            # Перезапускаем все сервисы в фоновом режиме
+            docker compose up -d
+
             # Выполняем миграции и сборку статики
-            sudo docker compose -f docker-compose.production.yml exec backend python manage.py migrate
-            sudo docker compose -f docker-compose.production.yml exec backend python manage.py collectstatic --no-input
+            docker compose exec backend python manage.py migrate
+            docker compose exec backend python manage.py collectstatic --no-input
+
+            # Очищаем неиспользуемые образы Docker для экономии места
+            docker image prune -f
 
   send_message:
     runs-on: ubuntu-latest
@@ -139,4 +140,4 @@ jobs:
       with:
         to: ${{ secrets.TELEGRAM_TO }}
         token: ${{ secrets.TELEGRAM_TOKEN }}
-        message: Деплой проекта Kittygram на ${{ secrets.HOST }} успешно выполнен!
+        message: ✅ Деплой проекта Kittygram на ${{ secrets.HOST }} успешно выполнен!
