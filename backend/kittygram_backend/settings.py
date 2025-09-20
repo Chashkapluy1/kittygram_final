@@ -6,14 +6,8 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Эта строка берет SECRET_KEY из .env. Если его нет, использует ключ по умолчанию.
-SECRET_KEY = os.getenv('SECRET_KEY', 'p&q@w9@t$t!+48^%a2)3#s8s*^t(x^q9l!$0@y&v%r*z8h(m)r')
-
-# Эта строка берет DEBUG из .env. Если его нет, DEBUG=False.
+SECRET_KEY = os.getenv('SECRET_KEY', 'default-secret-key')
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
-
-# ЭТОТ СПОСОБ РАБОТАЛ! Возвращаемся к нему.
-# Он берет строку из .env и делит ее по запятым.
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
 
 INSTALLED_APPS = [
@@ -97,5 +91,4 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': ['rest_framework.authentication.TokenAuthentication'],
 }
 
-# И для CORS возвращаем самый простой способ
-CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3000,http://127.0.0.1:3000').split(',')
+CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3000').split(',')
