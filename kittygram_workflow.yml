@@ -113,10 +113,10 @@ jobs:
               cd kittygram_final
             fi
             echo "${{ secrets.DOT_ENV }}" > .env
-            sudo docker compose pull
-            sudo docker compose up -d --force-recreate
-            sudo docker compose exec backend python manage.py migrate
-            sudo docker compose exec backend python manage.py collectstatic --no-input
+            sudo docker compose -f docker-compose.production.yml pull
+            sudo docker compose -f docker-compose.production.yml up -d --force-recreate
+            sudo docker compose -f docker-compose.production.yml exec backend python manage.py migrate
+            sudo docker compose -f docker-compose.production.yml exec backend python manage.py collectstatic --no-input
             sudo docker image prune -f
 
   send_message:
