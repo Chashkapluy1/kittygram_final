@@ -3,6 +3,7 @@ version: '3.8'
 services:
   db:
     image: postgres:13.0-alpine
+    restart: always
     volumes:
       - pg_data:/var/lib/postgresql/data/
     env_file: ./.env
@@ -16,6 +17,7 @@ services:
 
   backend:
     build: ./backend/
+    restart: always
     volumes:
       - static_volume:/app/static/
       - media_volume:/app/media/
@@ -28,6 +30,7 @@ services:
 
   frontend:
     build: ./frontend/
+    restart: always
     volumes:
       - static_volume:/app/build/static
     depends_on:
@@ -37,6 +40,7 @@ services:
 
   gateway:
     build: ./nginx/
+    restart: always
     ports:
       - "9000:80"
     volumes:
