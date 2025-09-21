@@ -16,7 +16,7 @@ services:
       retries: 5
 
   backend:
-    image: pavellagerev/kittygram_backend:latest # <-- ИСПОЛЬЗУЕМ IMAGE
+    image: pavellagerev/kittygram_backend:latest
     restart: always
     volumes:
       - static_volume:/app/static/
@@ -29,23 +29,19 @@ services:
       - kittygram_network
 
   frontend:
-    image: pavellagerev/kittygram_frontend:latest # <-- ИСПОЛЬЗУЕМ IMAGE
+    image: pavellagerev/kittygram_frontend:latest
     restart: always
     volumes:
-      - static_volume:/app/build/static
-    depends_on:
-      - backend
-    networks:
-      - kittygram_network
+      - static_volume:/app/build
 
   gateway:
-    image: pavellagerev/kittygram_gateway:latest # <-- ИСПОЛЬЗУЕМ IMAGE
+    image: pavellagerev/kittygram_gateway:latest
     restart: always
     ports:
       - "9000:80"
     volumes:
-      - static_volume:/var/html/static/
-      - media_volume:/var/html/media/
+      - static_volume:/var/html/static_from_build
+      - media_volume:/var/html/media
     depends_on:
       - backend
       - frontend
