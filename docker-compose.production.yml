@@ -40,8 +40,8 @@ services:
     ports:
       - "9000:80"
     volumes:
-      - static_volume:/var/html/static_from_build
-      - media_volume:/var/html/media
+      - static_volume:/var/html/static/
+      - media_volume:/var/html/media/
     depends_on:
       - backend
       - frontend
