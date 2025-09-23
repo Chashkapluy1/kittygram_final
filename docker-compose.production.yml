@@ -33,6 +33,8 @@ services:
     restart: always
     volumes:
       - static_volume:/app/build
+    networks:
+      - kittygram_network
 
   gateway:
     image: pavellagerev/kittygram_gateway:latest
