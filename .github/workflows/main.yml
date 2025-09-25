@@ -113,7 +113,7 @@ jobs:
           fi
           echo "${{ secrets.DOT_ENV }}" > .env
           sudo docker compose -f docker-compose.production.yml pull
-          sudo docker compose -f docker-compose.production.yml up -d --force-recreate
+          sudo docker compose -f docker-compose.production.yml up -d --build --force-recreate
           sudo docker compose -f docker-compose.production.yml exec backend python manage.py migrate
           sudo docker compose -f docker-compose.production.yml exec backend python manage.py collectstatic --no-input
           sudo docker image prune -f
@@ -130,8 +130,8 @@ jobs:
         token: ${{ secrets.TELEGRAM_TOKEN }}
         message: |
           ✅ Деплой проекта Kittygram успешно выполнен!
-          
-           **Инициатор:** ${{ github.actor }}
-           **Коммит:** "${{ github.event.commits[0].message }}"
-          
-           **Посмотреть коммит:** https://github.com/${{ github.repository }}/commit/${{ github.sha }}
+
+          **Инициатор:** ${{ github.actor }}
+          **Коммит:** "${{ github.event.commits[0].message }}"
+
+          **Посмотреть коммит:** https://github.com/${{ github.repository }}/commit/${{ github.sha }}
